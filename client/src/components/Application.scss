@@ -1,0 +1,62 @@
+/**
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Copyright (c) 2022 Codesbiome, guasam
+ *
+ * @author  : guasam
+ * @project : ERWT Boilerplate
+ * @package : Application Sass Stylesheet
+*/
+
+
+/**
+ *==========================================================================
+ * Application Specific Stylesheet
+ *==========================================================================
+ *
+ * Here we use the codes to apply application specific style
+ */
+
+.card {
+  &.bg-darkseagreen {
+    border-color: darkseagreen;
+    .card-header {
+      background-color: darkseagreen;
+    }
+  }
+
+  &.bg-plum {
+    border-color: plum;
+    .card-header {
+      background-color: plum;
+    }
+  }
+
+  &.bg-skyblue {
+    border-color: skyblue;
+    .card-header {
+      background-color: skyblue;
+    }
+  }
+
+  &.bg-salmon {
+    border-color: salmon;
+    .card-header {
+      background-color: salmon;
+    }
+  }
+
+  &.bg-sandybrown {
+    border-color: sandybrown;
+    .card-header {
+      background-color: sandybrown;
+    }
+  }
+}
+
+.air-datepicker-cell {
+  border-radius: 0
+}
+
+.air-datepicker-cell.-focus- {
+  background-color: #4a4a4a !important;
+}
