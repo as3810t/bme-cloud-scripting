@@ -10,7 +10,7 @@ module.exports = [
   inDev() && new webpack.HotModuleReplacementPlugin(),
   inDev() && new ReactRefreshWebpackPlugin(),
   new webpack.DefinePlugin({
-    BUILD_MODE: process.env.NODE_ENV
+    BUILD_MODE: JSON.stringify(process.env.NODE_ENV)
   }),
   new HtmlWebpackPlugin({
     template: 'src/index.html',
