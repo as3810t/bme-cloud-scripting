@@ -66,11 +66,34 @@ export function includeRange(schedules: ScheduleType, from: Date, to: Date): Sch
     }
     // The included range extends the end of an existing schedule
     else if(schedule.from.getTime() <= from.getTime() && from.getTime() <= schedule.to.getTime() && schedule.to.getTime() < to.getTime()) {
-      result.push({ from: schedule.from, to: to })
+      const start = schedule.from
+      let end = to
+      while (i+1 < schedules.length) {
+        const nextSchedule = schedules[i + 1]
+        // Included range is before next schedule
+        if(end.getTime() < nextSchedule.from.getTime()) {
+          break
+        }
+        // Included range ends inside next schedule
+        else if(nextSchedule.from.getTime() <= end.getTime() && end.getTime() <= nextSchedule.to.getTime()) {
+          end = nextSchedule.to
+          i++
+          break
+        }
+        // Next schedule is also inside included range
+        else if(nextSchedule.to.getTime() < end.getTime()) {
+          i++
+        }
+        else {
+          alert('Should not have happened')
+          console.error('Should not have happened')
+        }
+      }
+      result.push({ from: start, to: end })
       processed = true
     }
     // The schedule is in the included range
-    else if(from.getTime() < schedule.from.getTime() && schedule.to.getTime() && to.getTime()) {
+    else if(from.getTime() < schedule.from.getTime() && schedule.to.getTime() < to.getTime()) {
       const start = from
       let end = to
       while (i+1 < schedules.length) {
