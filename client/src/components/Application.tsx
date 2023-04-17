@@ -10,6 +10,7 @@ import {CiSettings} from "react-icons/ci";
 import ScheduleTab from "@src/components/ScheduleTab";
 import {io, Socket} from "socket.io-client";
 import {BiLoader} from "react-icons/bi";
+import LogTab from "@src/components/LogTab";
 
 const DEFAULT_TAB = "schedules"
 type TabType = 'schedules' | 'logs' | 'settings'
@@ -70,6 +71,7 @@ const Application: React.FC = () => {
       {!connected && <div><BiLoader/>Connecting</div>}
       {connected && <>
         {tab === 'schedules' && <ScheduleTab socket={socket!}/>}
+        {tab === 'logs' && <LogTab socket={socket!}/>}
       </>}
     </SettingsContext.Provider>
   );

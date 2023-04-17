@@ -18,6 +18,7 @@ const io = new Server(server, {
 app.use(express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist')))
 
 const connectedClients = [] as Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>[]
+const workerUptime = new Map<string, Date>()
 
 let workerId = 0
 let bree = new Bree({
@@ -40,7 +41,31 @@ let bree = new Bree({
   }
 });
 
+async function getLogs(socket: Socket) {
+  socket.emit('logs', bree.config.jobs.map(job => ({
+    name: job.name,
+    interval: job.interval,
+    date: job.date?.toISOString(),
+    uptime: workerUptime.get(job.name)?.toISOString()
+  })))
+}
+
+bree.on('worker created', (name) => {
+  workerUptime.set(name, new Date())
+  connectedClients.forEach(getLogs)
+});
+
+bree.on('worker deleted', (name) => {
+  workerUptime.delete(name)
+  connectedClients.forEach(getLogs)
+});
+
 async function loadJobs() {
+  await bree.stop()
+  for(const job of bree.config.jobs) {
+    await bree.remove(job.name)
+  }
+
   const clusters = await loadJSON(new URL('../clusters.json', import.meta.url)) as any[]
   const schedules = await loadJSON(new URL('../schedules.json', import.meta.url)) as any[]
 
@@ -59,31 +84,50 @@ async function loadJobs() {
       await bree.run(`refresh-${cluster.name}`)
     }
 
+    const now= new Date()
     const schedule = (schedules.find(s => s.name === cluster.name) || { schedule: [] }).schedule
     for(const s of schedule) {
       const dateToString = (d: Date) => `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}-${d.getHours()}-${d.getMinutes()}`
       const from = new Date(s.from)
       const to = new Date(s.to)
 
-      await bree.add({
-        name: `start-${cluster.name}-${dateToString(from)}`,
-        path: path.join(path.dirname(fileURLToPath(import.meta.url)), 'jobs/start-cluster.js'),
-        date: from,
-        worker: {
-          argv: [cluster.name]
-        }
-      })
-      await bree.start(`start-${cluster.name}-${dateToString(from)}`)
+      if(from.getTime() > now.getTime()) {
+        await bree.add({
+          name: `start-${cluster.name}-${dateToString(from)}`,
+          path: path.join(path.dirname(fileURLToPath(import.meta.url)), 'jobs/start-cluster.js'),
+          date: from,
+          worker: {
+            argv: [cluster.name]
+          }
+        })
+        await bree.start(`start-${cluster.name}-${dateToString(from)}`)
+      }
 
-      await bree.add({
-        name: `stop-${cluster.name}-${dateToString(to)}`,
-        path: path.join(path.dirname(fileURLToPath(import.meta.url)), 'jobs/stop-cluster.js'),
-        date: to,
-        worker: {
-          argv: [cluster.name]
-        }
-      })
-      await bree.start(`stop-${cluster.name}-${dateToString(to)}`)
+      if(to.getTime() > now.getTime()) {
+        await bree.add({
+          name: `stop-${cluster.name}-${dateToString(to)}`,
+          path: path.join(path.dirname(fileURLToPath(import.meta.url)), 'jobs/stop-cluster.js'),
+          date: to,
+          worker: {
+            argv: [cluster.name]
+          }
+        })
+        await bree.start(`stop-${cluster.name}-${dateToString(to)}`)
+      }
+
+      const killDate = new Date(to)
+      killDate.setMinutes(killDate.getMinutes() + 30)
+      if(killDate.getTime() > now.getTime()) {
+        await bree.add({
+          name: `kill-${cluster.name}-${dateToString(killDate)}`,
+          path: path.join(path.dirname(fileURLToPath(import.meta.url)), 'jobs/kill-cluster.js'),
+          date: killDate,
+          worker: {
+            argv: [cluster.name]
+          }
+        })
+        await bree.start(`kill-${cluster.name}-${dateToString(killDate)}`)
+      }
     }
   }
 }
@@ -160,11 +204,6 @@ io.on('connection', async (socket) => {
   }
 
   async function overrideSchedules(schedules) {
-    await bree.stop()
-    for(const job of bree.config.jobs) {
-      await bree.remove(job.name)
-    }
-
     await saveJSON(new URL('../schedules.json', import.meta.url), schedules)
     await loadJobs()
     await getClusters()
@@ -179,6 +218,7 @@ io.on('connection', async (socket) => {
   socket.on('start_cluster', startCluster)
   socket.on('stop_cluster', stopCluster)
   socket.on('override_schedules', overrideSchedules)
+  socket.on('get_logs', async () => getLogs(socket))
 
   socket.on('disconnect', async (reason) => {
     console.log('connection closed', reason);
