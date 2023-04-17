@@ -95,9 +95,9 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ schedules, names, onRowDe
           {displayedSchedules(schedules, names).map(s =>
             <tr style={(!s.from || !s.to) ? { backgroundColor: 'red' } : {}} key={`${s.clusters.join('-')}-${s.from ? s.from.toString() : 'null'}-${s.to ? s.to.toUTCString() : null}`}>
               <td>{s.clusters.join(', ')}</td>
-              {s.from && <td>{s.from.toISOString().slice(0, 16).replace(/-/g, ". ").replace("T", ". ")}</td>}
+              {s.from && <td>{s.from.toLocaleString('hu-HU', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}</td>}
               {!s.from && <td></td>}
-              {s.to && <td>{s.to.toISOString().slice(0, 16).replace(/-/g, ". ").replace("T", ". ")}</td>}
+              {s.to && <td>{s.to.toLocaleString('hu-HU', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}</td>}
               {!s.to && <td></td>}
               <td><Button variant="danger" size="sm" onClick={() => onRowDelete(s)}><VscClose/></Button></td>
             </tr>
