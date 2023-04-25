@@ -15,9 +15,7 @@ import {loadJSON} from "../utils/json.js";
     await login(browser, cluster.url, cluster.login)
 
     const vmStatuses = await getVMStatuses(browser, cluster.url, cluster.machines.map(m => m.id))
-    for(const id in vmStatuses) {
-      if (parentPort) parentPort.postMessage(JSON.stringify({ type: 'vm_status_update', cluster: cloudName, id: id, status: vmStatuses[id] }))
-    }
+    if (parentPort) parentPort.postMessage(JSON.stringify({ type: 'vm_status_update', cluster: cloudName, statuses: vmStatuses }))
   }
   finally {
     await browser.close()

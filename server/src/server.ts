@@ -37,9 +37,9 @@ app.use(basicAuth({
 app.use(express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist')))
 
 const connectedClients = [] as Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>[]
+const machineStatusCache = new Map<string, string>()
 const workerUptime = new Map<string, Date>()
 
-let workerId = 0
 let bree = new Bree({
   root: path.join(path.dirname(fileURLToPath(import.meta.url)), 'jobs'),
   doRootCheck: false,
@@ -48,8 +48,11 @@ let bree = new Bree({
     try {
       message = JSON.parse(message.message)
       if (message.type === 'vm_status_update') {
+        for(const id in message.statuses) {
+          machineStatusCache.set(`${message.cluster}-${id}`, message.statuses[id])
+        }
         connectedClients.forEach(client => {
-          client.emit('vm_status_update', {cluster: message.cluster, id: message.id, status: message.status})
+          client.emit('vm_status_update', {cluster: message.cluster, statuses: message.statuses})
         })
       } else {
         console.error('UNKNOWN MESSAGE')
@@ -173,6 +176,7 @@ io.on('connection', async (socket) => {
     const clusters = await loadJSON(new URL('../clusters.json', import.meta.url)) as any[]
     for(const cluster of clusters) {
       await bree.stop(`refresh-${cluster.name}`)
+      machineStatusCache.clear()
     }
   }
 
@@ -184,7 +188,7 @@ io.on('connection', async (socket) => {
       login: undefined,
       machines: cluster.machines.map(machine => ({
         ...machine,
-        state: 'loading'
+        state: machineStatusCache.get(`${cluster.name}-${machine.id}`) || 'loading'
       })),
       schedule: (schedules.find(s => s.name === cluster.name) || { schedule: [] }).schedule
     })))
