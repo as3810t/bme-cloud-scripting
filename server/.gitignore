@@ -91,3 +91,4 @@ dist/
 .idea/
 clusters.json
 schedules.json
+settings.json

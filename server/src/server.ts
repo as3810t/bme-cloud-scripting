@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import Bree from "bree";
 import * as path from "path";
 import {loadJSON, saveJSON} from "./utils/json.js";
+import basicAuth from "express-basic-auth"
 
 const app = express()
 const server = http.createServer(app)
@@ -14,6 +15,24 @@ const io = new Server(server, {
     origin: "http://localhost:8080"
   } : undefined
 })
+
+app.use(basicAuth({
+  authorizer: (username, password, callback) => {
+    loadJSON(new URL('../settings.json', import.meta.url))
+      .then(settings => {
+        console.log(settings, username, password)
+        if(settings.login[username] && settings.login[username] === password) {
+          callback(null, true)
+        }
+        else {
+          callback(null, false)
+        }
+      })
+      .catch(() => callback(null, false))
+  },
+  authorizeAsync: true,
+  challenge: true
+}))
 
 app.use(express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist')))
 

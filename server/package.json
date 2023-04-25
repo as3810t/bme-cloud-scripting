@@ -10,6 +10,7 @@
     "bree": "^9.1.3",
     "cross-env": "^7.0.3",
     "express": "^4.18.2",
+    "express-basic-auth": "^1.2.1",
     "puppeteer": "^19.8.3",
     "socket.io": "^4.6.1",
     "ts-node": "^10.9.1",
@@ -22,7 +23,13 @@
     "nodemon": "^2.0.22"
   },
   "nodemonConfig": {
-    "ignore": ["package.json", "clusters.json", "package-lock.json", "schedules.json", "tsconfig.json"],
+    "ignore": [
+      "package.json",
+      "clusters.json",
+      "package-lock.json",
+      "schedules.json",
+      "tsconfig.json"
+    ],
     "delay": 2500
   }
 }
