@@ -7,6 +7,7 @@ import Bree from "bree";
 import * as path from "path";
 import {loadJSON, saveJSON} from "./utils/json.js";
 import basicAuth from "express-basic-auth"
+import fs from "fs";
 
 const app = express()
 const server = http.createServer(app)
@@ -232,6 +233,31 @@ io.on('connection', async (socket) => {
     await getClusters()
   }
 
+  async function getJsons() {
+    const clusters = (await fs.promises.readFile(new URL('../clusters.json', import.meta.url))).toString()
+    const schedules = (await fs.promises.readFile(new URL('../schedules.json', import.meta.url))).toString()
+    const settings = (await fs.promises.readFile(new URL('../settings.json', import.meta.url))).toString()
+
+    socket.emit('jsons', {
+      clusters,
+      schedules,
+      settings
+    })
+  }
+
+  async function setJsons({ clusters, schedules, settings }: { clusters: string, schedules: string, settings: string }) {
+    await fs.promises.writeFile(new URL('../clusters.json', import.meta.url), clusters)
+    await fs.promises.writeFile(new URL('../schedules.json', import.meta.url), schedules)
+    await fs.promises.writeFile(new URL('../settings.json', import.meta.url), settings)
+
+    await getJsons()
+    await loadJobs()
+  }
+
+  async function reloadJobs() {
+    await loadJobs()
+  }
+
   /* If this is the first connection, start the refresh tasks */
   if(connectedClients.length === 1) {
     await startRefresh()
@@ -242,6 +268,9 @@ io.on('connection', async (socket) => {
   socket.on('stop_cluster', stopCluster)
   socket.on('override_schedules', overrideSchedules)
   socket.on('get_logs', async () => getLogs(socket))
+  socket.on('get_jsons', getJsons)
+  socket.on('set_jsons', setJsons)
+  socket.on('reload_jobs', reloadJobs)
 
   socket.on('disconnect', async (reason) => {
     console.log('connection closed', reason);

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import "bootstrap/scss/bootstrap.scss";
 import "air-datepicker/air-datepicker.css";
 import './Application.scss';
-import {Container, Nav, Navbar, Row} from "react-bootstrap";
+import {Container, Nav, Navbar} from "react-bootstrap";
 import SettingsContext from "@src/context/SettingsContext";
 import {MdSchedule} from "react-icons/md";
 import {RxActivityLog} from "react-icons/rx";
@@ -11,6 +11,8 @@ import ScheduleTab from "@src/components/ScheduleTab";
 import {io, Socket} from "socket.io-client";
 import {BiLoader} from "react-icons/bi";
 import LogTab from "@src/components/LogTab";
+import SettingsTab from "@src/components/SettingsTab";
+import {FaMagic} from "react-icons/fa";
 
 const DEFAULT_TAB = "schedules"
 type TabType = 'schedules' | 'logs' | 'settings'
@@ -64,7 +66,7 @@ const Application: React.FC = () => {
           <Nav variant="tabs" className="me-auto" defaultActiveKey={DEFAULT_TAB} onSelect={(tab: TabType) => setTab(tab)}>
             <Nav.Link eventKey={'schedules' as TabType} disabled={!connected}><MdSchedule/>&nbsp;Schedules</Nav.Link>
             <Nav.Link eventKey={'logs' as TabType} disabled={!connected}><RxActivityLog/>&nbsp;Logs</Nav.Link>
-            <Nav.Link eventKey={'settings' as TabType} disabled={!connected}><CiSettings/>&nbsp;Settings</Nav.Link>
+            <Nav.Link eventKey={'settings' as TabType} disabled={!connected}><FaMagic/>&nbsp;Murphy's Corner</Nav.Link>
           </Nav>
         </Container>
       </Navbar>
@@ -72,6 +74,7 @@ const Application: React.FC = () => {
       {connected && <>
         {tab === 'schedules' && <ScheduleTab socket={socket!}/>}
         {tab === 'logs' && <LogTab socket={socket!}/>}
+        {tab === 'settings' && <SettingsTab socket={socket!}/>}
       </>}
     </SettingsContext.Provider>
   );
