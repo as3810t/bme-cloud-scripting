@@ -21,24 +21,38 @@ const io = new Server(server, {
 })
 
 /* Configure basic authentication on Express endpoints */
+if(process.env.NODE_ENV !== 'development') {
+  const basicAuthMiddleware = basicAuth({
+    authorizer: (username, password, callback) => {
+      loadJSON(new URL('../settings.json', import.meta.url))
+          .then(settings => {
+            if(settings.login[username] && settings.login[username] === password) {
+              callback(null, true)
+            }
+            else {
+              callback(null, false)
+            }
+          })
+          .catch(() => callback(null, false))
+    },
+    authorizeAsync: true,
+    challenge: true
+  })
+  app.use(basicAuthMiddleware)
+  io.use((socket, next) => {
+    // @ts-ignore
+    basicAuthMiddleware(socket.request, {
+      set: () => {},
+      status: (code) => {
+        return {
+          send: () => {next(new Error('unauthorized'))},
+          json: () => {next(new Error('unauthorized'))}
+        }
+      }
+    }, next)
+  })
+}
 
-app.use(basicAuth({
-  authorizer: (username, password, callback) => {
-    loadJSON(new URL('../settings.json', import.meta.url))
-      .then(settings => {
-        console.log(settings, username, password)
-        if(settings.login[username] && settings.login[username] === password) {
-          callback(null, true)
-        }
-        else {
-          callback(null, false)
-        }
-      })
-      .catch(() => callback(null, false))
-  },
-  authorizeAsync: true,
-  challenge: true
-}))
 
 /* Configure Express endpoints */
 
