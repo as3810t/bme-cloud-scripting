@@ -3,7 +3,7 @@ import "bootstrap/scss/bootstrap.scss";
 import "air-datepicker/air-datepicker.css";
 import './Application.scss';
 import {Container, Nav, Navbar} from "react-bootstrap";
-import SettingsContext from "@src/context/SettingsContext";
+import SettingsContext, {DefaultSettingsContextProps, SettingsContextProps} from "@src/context/SettingsContext";
 import {MdSchedule} from "react-icons/md";
 import {RxActivityLog} from "react-icons/rx";
 import ScheduleTab from "@src/components/ScheduleTab";
@@ -33,6 +33,8 @@ const Application: React.FC = () => {
   const [socket, setSocket] = useState(null as Socket | null)
   const [connected, setConnected] = useState(false)
 
+  const [settings, setSettigns] = useState(DefaultSettingsContextProps)
+
   useEffect(() => {
     const sock = io(serverUrl())
     setSocket(sock)
@@ -40,18 +42,24 @@ const Application: React.FC = () => {
     function onConnect() {
       console.log('connected')
       setConnected(true)
+      sock.emit('get_settings')
     }
 
     function onDisconnect(reason: string) {
       console.log('disconnected', reason)
       setConnected(false)
-      // sock.connect()
+    }
+
+    function onSettings(settings: { schedule: SettingsContextProps }) {
+      setSettigns(settings.schedule)
     }
 
     sock.on('connect', onConnect)
     sock.on('disconnect', onDisconnect)
+    sock.on('settings', onSettings)
 
     return () => {
+      sock.off('settings', onSettings)
       sock.off('disconnect', onDisconnect)
       sock.off('connect', onConnect)
       sock.disconnect()
@@ -59,7 +67,7 @@ const Application: React.FC = () => {
   }, [])
 
   return (
-    <SettingsContext.Provider value={{ nightStartHour: 20, nightStartMinute: 0, nightEndHour: 7, nightEndMinute: 0 }}>
+    <SettingsContext.Provider value={settings}>
       <Navbar bg="light" variant="light" sticky="top" className="mb-4">
         <Container>
           <Navbar.Brand>BME Cloud Scheduler</Navbar.Brand>
@@ -71,7 +79,7 @@ const Application: React.FC = () => {
           </Nav>
         </Container>
       </Navbar>
-      {!connected && <div><BiLoader/>Connecting</div>}
+      {!connected && <div className="d-flex flex-column align-items-center justify-content-center"><BiLoader/>Connecting</div>}
       {connected && <>
         {tab === 'schedules' && <ScheduleTab socket={socket!}/>}
         {tab === 'jobs' && <JobTab socket={socket!}/>}

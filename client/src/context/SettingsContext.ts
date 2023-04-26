@@ -1,17 +1,19 @@
 import React, { createContext } from "react";
 
-type SettingsContextProps = {
+export type SettingsContextProps = {
   nightStartHour: number
   nightStartMinute: number
   nightEndHour: number
   nightEndMinute: number
 }
 
-const SettingsContext: React.Context<SettingsContextProps> = createContext({
+export const DefaultSettingsContextProps = {
   nightStartHour: 20,
   nightStartMinute: 0,
   nightEndHour: 7,
   nightEndMinute: 0
-})
+}
+
+const SettingsContext: React.Context<SettingsContextProps> = createContext(DefaultSettingsContextProps)
 
 export default SettingsContext

@@ -70,7 +70,7 @@ process.stdout.write = (function(write) {
 let bree = new Bree({
   root: path.join(path.dirname(fileURLToPath(import.meta.url)), 'jobs'),
   doRootCheck: false,
-  removeCompleted: true,
+  removeCompleted: false,
   workerMessageHandler: (message) => {
     try {
       message = JSON.parse(message.message)
@@ -273,6 +273,16 @@ async function setJsons(socket: Socket, { clusters, schedules, settings }: { clu
 
   await getJsons(socket)
   await loadJobs()
+  connectedClients.forEach(getSettings)
+}
+
+async function getSettings(socket: Socket) {
+  const settings = await loadJSON(new URL('../settings.json', import.meta.url))
+
+  socket.emit('settings', {
+    ...settings,
+    login: undefined
+  })
 }
 
 /* Actions - Log related */
@@ -317,6 +327,7 @@ io.on('connection', async (socket) => {
   socket.on('get_jsons', async () => getJsons(socket))
   socket.on('set_jsons', async (jsons) => setJsons(socket, jsons))
   socket.on('reload_jobs', async () => loadJobs())
+  socket.on('get_settings', async () => getSettings(socket))
 
   socket.on('disconnect', async (reason) => {
     console.log('connection closed', reason);
