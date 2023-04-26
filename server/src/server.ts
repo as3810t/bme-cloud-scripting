@@ -194,6 +194,10 @@ async function getJobs(socket: Socket) {
   })))
 }
 
+async function startJob(job: string) {
+  await bree.run(job)
+}
+
 /* Actions - cluster related */
 
 async function getClusters(socket: Socket) {
@@ -306,6 +310,8 @@ io.on('connection', async (socket) => {
   socket.on('override_schedules', async (schedules) => overrideSchedules(socket, schedules))
 
   socket.on('get_jobs', async () => getJobs(socket))
+  socket.on('start_job', async (job) => startJob(job))
+
   socket.on('get_logs', async () => getLogs(socket))
 
   socket.on('get_jsons', async () => getJsons(socket))

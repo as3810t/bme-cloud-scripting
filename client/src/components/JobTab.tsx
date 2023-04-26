@@ -1,8 +1,9 @@
 import {Socket} from "socket.io-client";
 import React, {useEffect, useState} from "react";
 import JobType from "@src/utils/JobType";
-import {Col, Container, Row, Table} from "react-bootstrap";
+import {Button, Col, Container, Row, Table} from "react-bootstrap";
 import {MdCalendarToday, MdEventRepeat} from "react-icons/md";
+import {FaPlay} from "react-icons/fa";
 
 type JobTabProps = {
   socket: Socket
@@ -68,13 +69,14 @@ const JobTab: React.FC<JobTabProps> = ({ socket }) => {
             </thead>
             <tbody>
             {jobs.map(job => <tr key={job.name} style={{ backgroundColor: job.uptime !== undefined ? 'grey' : 'transparent' }}>
-              <td>{job.name}</td>
-              <td>
+              <td style={{ verticalAlign: 'middle' }}>{job.name}</td>
+              <td style={{ verticalAlign: 'middle' }}>
                 {job.date && <><MdCalendarToday/> {job.date.toLocaleString('hu-HU', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}</>}
                 {!job.date && <><MdEventRepeat/> every {job.interval / (60 * 1000)} minutes</>}
               </td>
-              <td>
+              <td style={{ verticalAlign: 'middle' }}>
                 {job.uptime && uptimeString(job.uptime)}
+                {!job.uptime && <Button variant="danger" size="sm" onClick={() => socket.emit('start_job', job.name)}><FaPlay/></Button>}
               </td>
             </tr>)}
             </tbody>
