@@ -1,7 +1,7 @@
 import {Socket} from "socket.io-client";
 import React, {useEffect, useState} from "react";
 import {Alert, Button, Col, Container, Form, Row} from "react-bootstrap";
-import LogType from "@src/utils/LogType";
+import JobType from "@src/utils/JobType";
 
 type LogTabProps = {
   socket: Socket
