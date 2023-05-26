@@ -71,7 +71,7 @@ process.stdout.write = (function(write) {
     const log = typeof buffer === 'string' ? buffer : new TextDecoder().decode(buffer)
 
     serverLog.push(log)
-    if(serverLog.length > 100) serverLog.shift()
+    if(serverLog.length > 1000) serverLog.shift()
 
     connectedClients.forEach(socket => socket.emit('log', log))
 
@@ -93,7 +93,7 @@ let bree = new Bree({
           machineStatusCache.set(`${message.cluster}-${id}`, message.statuses[id])
         }
         connectedClients.forEach(client => {
-          client.emit('vm_status_update', {cluster: message.cluster, statuses: message.statuses})
+          client.emit('vm_status_update', {cluster: message.cluster, statuses: message.statuses, statistics: message.statistics})
         })
       } else {
         console.error('UNKNOWN MESSAGE')

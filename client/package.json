@@ -8,6 +8,7 @@
   "devDependencies": {
     "@marshallofsound/webpack-asset-relocator-loader": "^0.5.0",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.8",
+    "@types/d3": "^7.4.0",
     "@types/node": "^18.11.5",
     "@types/react": "^18.0.23",
     "@types/react-dom": "^18.0.7",
@@ -40,6 +41,7 @@
   "dependencies": {
     "air-datepicker": "^3.3.5",
     "bootstrap": "^5.2.3",
+    "d3": "^7.8.4",
     "react": "^18.2.0",
     "react-bootstrap": "^2.7.2",
     "react-dom": "^18.2.0",

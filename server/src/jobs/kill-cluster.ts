@@ -1,6 +1,6 @@
 import {parentPort} from "worker_threads";
 import puppeteer from "puppeteer";
-import {getVMStatuses, killVMs, login, stopVMs} from "../utils/cloud.js";
+import {getVMStatuses, killVMs, launchBrowser, login, stopVMs} from "../utils/cloud.js";
 import {loadJSON} from "../utils/json.js";
 
 (async () => {
@@ -9,9 +9,7 @@ import {loadJSON} from "../utils/json.js";
   const clusters = await loadJSON(new URL('../../clusters.json', import.meta.url)) as any[]
   const cluster = clusters.find(c => c.name === cloudName)!
 
-  const browser = await puppeteer.launch()
-
-  try {
+  await launchBrowser(async (browser) => {
     await login(browser, cluster.url, cluster.login)
 
     const vmStatuses = await getVMStatuses(browser, cluster.url, cluster.machines.map(m => m.id))
@@ -21,11 +19,8 @@ import {loadJSON} from "../utils/json.js";
       else console.log(`${cluster.name} ${id} is already stopped`)
     }
 
-    await killVMs(browser, cluster.url, vmsToKill, 10, 1000)
-  }
-  finally {
-    await browser.close()
-  }
+    await killVMs(browser, cluster.url, vmsToKill, 10, 60000)
+  })
 
   process.exit(0);
 })();

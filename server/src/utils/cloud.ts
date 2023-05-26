@@ -1,7 +1,35 @@
-import {Browser} from 'puppeteer';
+import puppeteer, {Browser, BrowserContext} from 'puppeteer';
+import { ChildProcess } from 'child_process';
 import {delay} from "./delay.js";
 
-export const login = async (browser: Browser, cloudUrl: string, login: { type: 'user', userName: string, password: string } | { type: 'eduId', eduId: string, password: string })=> {
+export const launchBrowser = async (body: (context: BrowserContext) => Promise<void>)=> {
+  let browser: Browser | null = null
+  let childProcess: ChildProcess | null = null
+  let context: BrowserContext | null = null
+
+  try {
+    browser = await puppeteer.launch({handleSIGHUP: true, handleSIGINT: true, handleSIGTERM: true})
+    childProcess = browser.process()!
+
+    context = await browser.createIncognitoBrowserContext()
+    await body(context)
+  }
+  finally {
+    if(context !== null) {
+      await context.close()
+    }
+
+    if(browser !== null) {
+      await browser.close()
+    }
+
+    if(childProcess !== null && childProcess.connected) {
+      childProcess.kill('SIGKILL')
+    }
+  }
+}
+
+export const login = async (browser: BrowserContext, cloudUrl: string, login: { type: 'user', userName: string, password: string } | { type: 'eduId', eduId: string, password: string })=> {
   if (login.type === 'user') {
     await loginViaCircle(browser, cloudUrl, login.userName, login.password)
   } else if (login.type === 'eduId') {
@@ -11,7 +39,7 @@ export const login = async (browser: Browser, cloudUrl: string, login: { type: '
   }
 }
 
-export const loginViaEduId = async (browser: Browser, cloudUrl: string, eduId: string, password: string) => {
+export const loginViaEduId = async (browser: BrowserContext, cloudUrl: string, eduId: string, password: string) => {
   // Create a page
   const page = await browser.newPage();
 
@@ -39,7 +67,7 @@ export const loginViaEduId = async (browser: Browser, cloudUrl: string, eduId: s
   await loginButton.dispose();
 }
 
-export const loginViaCircle = async (browser: Browser, cloudUrl: string, userName: string, password: string) => {
+export const loginViaCircle = async (browser: BrowserContext, cloudUrl: string, userName: string, password: string) => {
   // Create a page
   const page = await browser.newPage();
 
@@ -64,7 +92,7 @@ export const loginViaCircle = async (browser: Browser, cloudUrl: string, userNam
 
 export type VMStatus = 'running' | 'stopped'
 
-export const getVMStatuses = async (browser: Browser, cloudUrl: string, ids: string[]) => {
+export const getVMStatuses = async (browser: BrowserContext, cloudUrl: string, ids: string[]) => {
   // Create a page
   const page = await browser.newPage();
 
@@ -86,7 +114,7 @@ export const getVMStatuses = async (browser: Browser, cloudUrl: string, ids: str
   return result
 }
 
-export const startVMs = async (browser: Browser, cloudUrl: string, ids: string[], batchSize: number, batchDelayMs: number) => {
+export const startVMs = async (browser: BrowserContext, cloudUrl: string, ids: string[], batchSize: number, batchDelayMs: number) => {
   let counter = 1
   for(const id of ids) {
     // Only stop batchSize machines each batchDelayMs milliseconds
@@ -113,7 +141,7 @@ export const startVMs = async (browser: Browser, cloudUrl: string, ids: string[]
   }
 }
 
-export const stopVMs = async (browser: Browser, cloudUrl: string, ids: string[], batchSize: number, batchDelayMs: number) => {
+export const stopVMs = async (browser: BrowserContext, cloudUrl: string, ids: string[], batchSize: number, batchDelayMs: number) => {
   let counter = 1
   for(const id of ids) {
     // Only stop batchSize machines each batchDelayMs milliseconds
@@ -140,7 +168,7 @@ export const stopVMs = async (browser: Browser, cloudUrl: string, ids: string[],
   }
 }
 
-export const killVMs = async (browser: Browser, cloudUrl: string, ids: string[], batchSize: number, batchDelayMs: number) => {
+export const killVMs = async (browser: BrowserContext, cloudUrl: string, ids: string[], batchSize: number, batchDelayMs: number) => {
   let counter = 1
   for(const id of ids) {
     // Only stop batchSize machines each batchDelayMs milliseconds
@@ -165,4 +193,31 @@ export const killVMs = async (browser: Browser, cloudUrl: string, ids: string[],
 
     counter++
   }
+}
+
+const graphiteDataPoints = async (cloudUrl: string, timeSpan: 'last10m' | 'last5d', target: string) => {
+  const graphiteResponse = await fetch(`${cloudUrl}/${timeSpan}?target=${target}`)
+  const graphiteJson = await graphiteResponse.json()
+  return graphiteJson[0].datapoints
+}
+
+export const historyOfRunningVMs = async (cloudUrl: string, timeSpan: 'last10m' | 'last5d') => {
+  return (await graphiteDataPoints(cloudUrl, timeSpan, 'sum(circle.*.vmcount)')) as [[number, number]]
+}
+
+export const numOfRunningVMs = async (cloudUrl: string, timeSpan: 'last10m' | 'last5d') => {
+  const machineCounts = await historyOfRunningVMs(cloudUrl, timeSpan)
+  return machineCounts[machineCounts.length - 1][0]
+}
+
+export const historyOfCPUUsage = async (cloudUrl: string, timeSpan: 'last10m' | 'last5d') => {
+  return (await graphiteDataPoints(cloudUrl, timeSpan, 'avg(circle.*.cpu.percent)')) as [[number, number]]
+}
+
+export const historyOfRAMUsage = async (cloudUrl: string, timeSpan: 'last10m' | 'last5d') => {
+  return (await graphiteDataPoints(cloudUrl, timeSpan, 'avg(circle.*.memory.usage)')) as [[number, number]]
+}
+
+export const historyOfRAMAllocation = async (cloudUrl: string, timeSpan: 'last10m' | 'last5d') => {
+  return (await graphiteDataPoints(cloudUrl, timeSpan, 'sum(circle.*.memory.allocated)')) as [[number, number]]
 }

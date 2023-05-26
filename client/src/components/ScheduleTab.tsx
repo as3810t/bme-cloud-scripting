@@ -45,12 +45,14 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ socket }) => {
       })))
     }
 
-    function onVmStatusUpdate({ cluster: clusterName, statuses }: { cluster: string, statuses: { [_: string]: string }}) {
+    function onVmStatusUpdate({ cluster: clusterName, statuses, statistics }: { cluster: string, statuses: { [_: string]: string }, statistics: any}) {
       const cluster = clusters.find(c => c.name === clusterName)!
       for(const id in statuses) {
         const machine = cluster.machines.find(m => m.id === id)!
         machine.state = statuses[id]
       }
+      cluster.statistics = statistics
+      console.log(statistics)
 
       setClusters(structuredClone(clusters))
     }
